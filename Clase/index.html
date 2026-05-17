@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cartelera Pop Cinema - Producción</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-color: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-color: #38bdf8;
+            --success: #22c55e;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            color: var(--accent-color);
+            margin-bottom: 10px;
+        }
+
+        /* --- ESTADOS DE CARGA (PRODUCTION LOADING) --- */
+        .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(56, 189, 248, 0.1);
+            border-top: 5px solid var(--accent-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            color: var(--danger);
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            padding: 20px;
+            border: 1px dashed var(--danger);
+            border-radius: 8px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .id-hidden {
+            display: none !important;
+        }
+
+        /* --- CONTENEDOR GRID Y TARJETAS --- */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+        }
+
+        .poster-container {
+            position: relative;
+            width: 100%;
+            height: 380px;
+            background-color: #050b14;
+        }
+
+        .poster-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .status-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .status-active { background-color: var(--success); color: white; }
+        .status-inactive { background-color: var(--danger); color: white; }
+
+        .card-content {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+
+        .movie-title {
+            font-size: 1.3rem;
+            margin: 0 0 10px 0;
+            font-weight: 700;
+        }
+
+        .movie-meta {
+            display: flex;
+            gap: 10px;
+            font-size: 0.85rem;
+            color: var(--accent-color);
+            margin-bottom: 12px;
+        }
+
+        .movie-desc {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+            margin-bottom: 20px;
+            flex-grow: 1;
+            display: -webkit-box;
+            -webkit-line-clamp: 4;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .movie-footer {
+            border-top: 1px solid #334155;
+            padding-top: 15px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .movie-footer div { margin-bottom: 5px; }
+        .movie-footer strong { color: var(--text-color); }
+
+        /* --- FILTROS --- */
+        .filters-bar {
+            max-width: 1400px;
+            margin: 0 auto 28px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+        }
+        .filter-group { display: flex; align-items: center; gap: 8px; }
+        .filter-group label { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; white-space: nowrap; }
+        .filter-select, .filter-input {
+            background: var(--card-bg);
+            color: var(--text-color);
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 7px 12px;
+            font-size: 0.85rem;
+            outline: none;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+        .filter-select:focus, .filter-input:focus { border-color: var(--accent-color); }
+        .filter-input { width: 200px; }
+        .filter-input::placeholder { color: var(--text-muted); }
+        .btn-reset {
+            background: transparent;
+            color: var(--accent-color);
+            border: 1px solid var(--accent-color);
+            border-radius: 8px;
+            padding: 7px 16px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+            white-space: nowrap;
+        }
+        .btn-reset:hover { background: var(--accent-color); color: #0f172a; }
+        .results-count { margin-left: auto; font-size: 0.8rem; color: var(--text-muted); white-space: nowrap; }
+        .no-results { grid-column: 1/-1; text-align: center; padding: 60px 20px; color: var(--text-muted); font-size: 1rem; }
+        .no-results span { font-size: 2.5rem; display: block; margin-bottom: 12px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Mi Cartelera Pop Cinema</h1>
+        <p>Carga asíncrona automatizada de catálogo</p>
+    </header>
+
+    <div class="filters-bar id-hidden" id="filters-bar">
+        <div class="filter-group">
+            <label>🔍</label>
+            <input type="text" class="filter-input" id="filter-search" placeholder="Buscar película...">
+        </div>
+        <div class="filter-group">
+            <label>Género</label>
+            <select class="filter-select" id="filter-type"><option value="">Todos</option></select>
+        </div>
+        <div class="filter-group">
+            <label>Estado</label>
+            <select class="filter-select" id="filter-estado">
+                <option value="">Todos</option>
+                <option value="disponible">Disponible</option>
+                <option value="no-disponible">No Disponible</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Ubicación</label>
+            <select class="filter-select" id="filter-ubicacion"><option value="">Todas</option></select>
+        </div>
+        <button class="btn-reset" id="btn-reset">✕ Limpiar</button>
+        <span class="results-count" id="results-count"></span>
+    </div>
+
+    <div id="loading-state" class="loading-container">
+        <div class="spinner"></div>
+        <p>Cargando películas en tiempo real...</p>
+    </div>
+
+    <main class="grid-container id-hidden" id="movies-grid">
+    </main>
+
+    <script>
+        const PELICULAS_JSON = [
+            {"imdbID":"231035","Title":"Violet Evergarden Movie","Year":"2020","Type":"Drama","Poster":"https://cdn.myanimelist.net/images/anime/1825/110716.jpg","description":"Han pasado varios años desde el final de la Primera Guerra Mundial. Violet Evergarden sigue en ascenso tras su éxito constante escribiendo cartas.","Ubication":"POPCINEMA","Estado":false,"Fec_Registro":"2025-08-29T23:39:05.023Z"},
+            {"imdbID":"29082025","Title":"Rápido y furioso","Year":"2001","Type":"Accion","Poster":"https://hips.hearstapps.com/hmg-prod/images/fast-and-furious-1-1564933929.jpg?crop=1xw:1xh;center,top&resize=980:*","description":"Una misteriosa banda de delincuentes se dedica a robar camiones en marcha desde vehículos deportivos. Brian entra en el mundo del tunning.","Ubication":"Guastatoya","Estado":true,"Fec_Registro":"2025-08-29T23:00:29.773Z"},
+            {"imdbID":"50","Title":"Kingsman","Year":"2014","Type":"Acción","Poster":"https://th.bing.com/th/id/R.65787ae015b3f841c132ebce37f68c7c?rik=3OLjiaJ2GIinQw&pid=ImgRaw&r=0","description":"El agente Galahad propone al hijo de un antiguo compañero: Eggsy. Mientras, el millonario Valentine planea algo que pondría en riesgo al planeta.","Ubication":"GUASTATOYA","Estado":true,"Fec_Registro":"2025-08-30T09:52:51.980Z"},
+            {"imdbID":"5555555555","Title":"El Conjuro 4","Year":"2025","Type":"Terror","Poster":"https://static.cinepolis.com/img/peliculas/50733/1/1/50733.jpg","description":"Ofrece otro emocionante capítulo del icónico universo cinematográfico de El Conjuro, basado en hechos reales con los Warren.","Ubication":"POPCINEMA","Estado":false,"Fec_Registro":"2025-08-29T09:33:27.783Z"},
+            {"imdbID":"555562244","Title":"Superman","Year":"2025","Type":"Acción/Suspenso","Poster":"https://encrypted-tbn1.gstatic.com/images?q=tbn:ANd9GcQFgxfqC60z1VjcC151bjgVNl9RhH9Tg6N8jDMkqQN0zsMCwLbV","description":"Un superhéroe se reconcilia con su herencia y su educación humana. Es la encarnación de la verdad y la justicia.","Ubication":"CHIMALTENANGO","Estado":true,"Fec_Registro":"2025-08-30T10:59:55.683Z"},
+            {"imdbID":"72344","Title":"Shrek","Year":"2004","Type":"Infantil/Comedia","Poster":"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRQkYPkJwr8Ce5OCE_lAEqsdRwk8I4xF_phEA&s","description":"Aventuras del ogro más famoso del cine y sus divertidos compañeros en el pantano.","Ubication":"POPCINEMA","Estado":true,"Fec_Registro":"2025-08-30T00:18:31.517Z"},
+            {"imdbID":"76542","Title":"Toy Story","Year":"1995","Type":"Infantil/Comedia","Poster":"https://media.tenor.com/XcBhzswyUV0AAAAM/e.gif","description":"Woody, el juguete favorito de Andy, se siente amenazado por la inesperada llegada de Buzz Lightyear, el guardián del espacio.","Ubication":"POPCINEMA","Estado":false,"Fec_Registro":"2025-08-30T00:13:47.053Z"},
+            {"imdbID":"76543","Title":"Megamente","Year":"2010","Type":"Infantil/Comedia","Poster":"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRAh-kcOK1B-LDz8SCZaeX9Klrho15sgdiu0w&s","description":"El supervillano Megamente finalmente derrota a su némesis. Al quedarse sin héroe, pierde todo su propósito.","Ubication":"POPCINEMA","Estado":true,"Fec_Registro":"2025-08-30T00:11:30.720Z"},
+            {"imdbID":"80000","Title":"Titanes del Atlantico","Year":"2014","Type":"Ciencia Ficcion","Poster":"https://imagenes.20minutos.es/files/image_640_auto/uploads/imagenes/2018/03/26/3135555.jpg","description":"La humanidad se transforma en robots gigantes para defender la costa este de los monstruos que surgen del fondo del mar.","Ubication":"POPCINEMA","Estado":true,"Fec_Registro":"2025-08-28T11:09:12.260Z"},
+            {"imdbID":"80005","Title":"Iron Man","Year":"2008","Type":"Acción","Poster":"https://encrypted-tbn1.gstatic.com/images?q=tbn:ANd9GcT95Db6V4jzEkaZjnWEV5n0qHu1a2InkUgafj3lWQDRxQIxYvL3","description":"Tras haber estado cautivo, el millonario ingeniero Tony Stark inventa un traje armado para luchar contra el mal.","Ubication":"chimaltenango","Estado":true,"Fec_Registro":"2025-08-30T10:28:34.590Z"},
+            {"imdbID":"800096","Title":"Your Name","Year":"2017","Type":"Drama","Poster":"https://meowmeowguatemala.com/wp-content/uploads/2023/03/Your-name-vol.01.jpg","description":"Taki y Mitsuha son dos jóvenes que intercambian cuerpos inexplicablemente, uno en la ciudad y otro en el campo.","Ubication":"SANTA CLARA","Estado":false,"Fec_Registro":"2025-08-28T23:45:32.860Z"},
+            {"imdbID":"DV2003","Title":"Jurassic World Rebirth","Year":"2025","Type":"Acción","Poster":"https://dx35vtwkllhj9.cloudfront.net/universalstudios/jurassic-world-rebirth/images/regions/us/updates1/onesheet.jpg","description":"Cinco años después de Dominion, sigue a una exmilitar en una misión secreta para extraer ADN de tres colosales criaturas prehistóricas.","Ubication":"Aokland Mall","Estado":true,"Fec_Registro":"2025-09-06T16:04:40.763Z"},
+            {"imdbID":"IMDB1756496804097","Title":"Godzilla Minus One","Year":"2023","Type":"Accion","Poster":"https://m.media-amazon.com/images/M/MV5BMjc5MjllMGUtMDIwMS00ZDVkLWEzODQtM2NlMTMwMTZhNThmXkEyXkFqcGc@._V1_.jpg","description":"Un monstruo gigante emerge de las profundidades del océano y se dispone a atacar Japón justo cuando trata de recuperarse de la guerra.","Ubication":"OKLAN","Estado":null,"Fec_Registro":"2025-08-29T13:47:18.230Z"},
+            {"imdbID":"XI460","Title":"Demon Slayer: MUGEN TRAIN","Year":"2020","Type":"Drama","Poster":"https://m.media-amazon.com/images/M/MV5BOWRhMzU3YWEtYTlkMC00ZmUwLTk4ZmMtMDE2YTFlNDFiNjhmXkEyXkFqcGc@._V1_.jpg","description":"Película de la célebre franquicia de anime centrado en el arco del Tren Infinito.","Ubication":"Oklan","Estado":true,"Fec_Registro":"2025-08-30T21:52:51.047Z"}
+        ];
+
+        const gridContainer = document.getElementById('movies-grid');
+        const loadingState = document.getElementById('loading-state');
+
+        let allMovies = [];
+
+        async function fetchMoviesCatalog() {
+            try {
+                const data = PELICULAS_JSON;
+                setTimeout(() => {
+                    allMovies = data;
+                    renderMoviesGrid(data);
+                    hideLoading();
+                    initFilters(data);
+                }, 1200);
+            } catch (error) {
+                console.error("Error crítico de carga:", error);
+                showErrorState("No se pudo conectar de forma automática con el catálogo. Intenta de nuevo más tarde.");
+            }
+        }
+
+        function renderMoviesGrid(movies) {
+            gridContainer.innerHTML = '';
+            if (movies.length === 0) {
+                gridContainer.innerHTML = '<div class="no-results"><span>🎬</span>No hay películas con esos filtros.</div>';
+                return;
+            }
+            movies.forEach(movie => {
+                const year = movie.Year || movie.Año || 'N/A';
+                const type = movie.Type || movie.Tipo || 'General';
+                const location = movie.Ubication || movie.Ubicación || 'No especificada';
+                const description = movie.description || 'Sin descripción disponible para esta película.';
+                const statusText = movie.Estado ? 'Disponible' : 'No Disponible';
+                const statusClass = movie.Estado ? 'status-active' : 'status-inactive';
+                const dateOptions = { year: 'numeric', month: 'short', day: 'numeric' };
+                const regDate = movie.Fec_Registro ? new Date(movie.Fec_Registro).toLocaleDateString('es-ES', dateOptions) : 'N/A';
+                const fallbackImg = 'https://via.placeholder.com/280x380?text=Sin+Poster';
+                const cardElement = document.createElement('div');
+                cardElement.className = 'card';
+                cardElement.innerHTML = `
+                    <div class="poster-container">
+                        <img src="${movie.Poster}" alt="${movie.Title}" onerror="this.onerror=null; this.src='${fallbackImg}';">
+                        <span class="status-badge ${statusClass}">${statusText}</span>
+                    </div>
+                    <div class="card-content">
+                        <h2 class="movie-title" title="${movie.Title}">${movie.Title}</h2>
+                        <div class="movie-meta">
+                            <span>📅 ${year}</span>
+                            <span>•</span>
+                            <span>🎬 ${type}</span>
+                        </div>
+                        <p class="movie-desc">${description}</p>
+                        <div class="movie-footer">
+                            <div>📍 Ubicación: <strong>${location}</strong></div>
+                            <div>🆔 IMDB ID: <strong>${movie.imdbID}</strong></div>
+                            <div>📝 Registrado: <strong>${regDate}</strong></div>
+                        </div>
+                    </div>
+                `;
+                gridContainer.appendChild(cardElement);
+            });
+        }
+
+        function hideLoading() {
+            loadingState.classList.add('id-hidden');
+            gridContainer.classList.remove('id-hidden');
+        }
+
+        function showErrorState(msg) {
+            loadingState.classList.add('id-hidden');
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.innerText = msg;
+            document.body.appendChild(errorDiv);
+        }
+
+        document.addEventListener('DOMContentLoaded', fetchMoviesCatalog);
+
+        function initFilters(movies) {
+            const types = [...new Set(movies.map(m => m.Type || m.Tipo || 'General'))].sort();
+            const ubicaciones = [...new Set(movies.map(m => (m.Ubication || m.Ubicación || '').toUpperCase()))].filter(Boolean).sort();
+            const selType = document.getElementById('filter-type');
+            types.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t; opt.textContent = t;
+                selType.appendChild(opt);
+            });
+            const selUbic = document.getElementById('filter-ubicacion');
+            ubicaciones.forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u; opt.textContent = u;
+                selUbic.appendChild(opt);
+            });
+            document.getElementById('filters-bar').classList.remove('id-hidden');
+            updateCount(movies.length, movies.length);
+            document.getElementById('filter-search').addEventListener('input', applyFilters);
+            document.getElementById('filter-type').addEventListener('change', applyFilters);
+            document.getElementById('filter-estado').addEventListener('change', applyFilters);
+            document.getElementById('filter-ubicacion').addEventListener('change', applyFilters);
+            document.getElementById('btn-reset').addEventListener('click', resetFilters);
+        }
+
+        function applyFilters() {
+            const search    = document.getElementById('filter-search').value.toLowerCase().trim();
+            const type      = document.getElementById('filter-type').value;
+            const estado    = document.getElementById('filter-estado').value;
+            const ubicacion = document.getElementById('filter-ubicacion').value;
+            const filtered = allMovies.filter(movie => {
+                const matchSearch = !search ||
+                    (movie.Title || '').toLowerCase().includes(search) ||
+                    (movie.description || '').toLowerCase().includes(search);
+                const matchType   = !type || (movie.Type || movie.Tipo || '') === type;
+                const matchEstado = !estado ||
+                    (estado === 'disponible'    && !!movie.Estado) ||
+                    (estado === 'no-disponible' && !movie.Estado);
+                const matchUbic   = !ubicacion ||
+                    (movie.Ubication || movie.Ubicación || '').toUpperCase() === ubicacion;
+                return matchSearch && matchType && matchEstado && matchUbic;
+            });
+            renderMoviesGrid(filtered);
+            updateCount(filtered.length, allMovies.length);
+        }
+
+        function resetFilters() {
+            document.getElementById('filter-search').value    = '';
+            document.getElementById('filter-type').value      = '';
+            document.getElementById('filter-estado').value    = '';
+            document.getElementById('filter-ubicacion').value = '';
+            renderMoviesGrid(allMovies);
+            updateCount(allMovies.length, allMovies.length);
+        }
+
+        function updateCount(shown, total) {
+            document.getElementById('results-count').textContent = `${shown} de ${total} películas`;
+        }
+    </script>
+</body>
+</html>
